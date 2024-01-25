@@ -1,0 +1,286 @@
+const express = require('express');
+const cors = require('cors');
+const { Pool } = require('pg');
+
+const app = express();
+const port = 5000;
+
+app.use(cors());
+app.use(express.json());
+
+// Replace the following connection details with your own
+const pool = new Pool({
+  user: 'root',
+  host: 'localhost',
+  database: 'StoryTail',
+  password: 'PASSWORDSQL',
+  port: 3306, // Change this port based on your database configuration
+});
+
+// Get all books
+app.get('/api/books', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM books');
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error fetching books:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// Get a specific book by ID
+app.get('/api/books/:id', async (req, res) => {
+  const bookId = parseInt(req.params.id);
+
+  try {
+    const result = await pool.query('SELECT * FROM books WHERE id = $1', [bookId]);
+
+    if (result.rows.length > 0) {
+      res.json(result.rows[0]);
+    } else {
+      res.status(404).json({ error: 'Book not found' });
+    }
+  } catch (error) {
+    console.error('Error fetching book by ID:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// Create a new book
+app.post('/api/books', async (req, res) => {
+  const { title, tag, ageGroup, pages, accessLevel, author, active, rating, image } = req.body;
+
+  try {
+    const result = await pool.query(
+      'INSERT INTO books (title, tag, age_group, pages, access_level, author, active, rating, image) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *',
+      [title, tag, ageGroup, pages, accessLevel, author, active, rating, image]
+    );
+
+    res.status(201).json(result.rows[0]);
+  } catch (error) {
+    console.error('Error creating a new book:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// Update a book by ID
+app.put('/api/books/:id', async (req, res) => {
+  const bookId = parseInt(req.params.id);
+  const { title, tag, ageGroup, pages, accessLevel, author, active, rating, image } = req.body;
+
+  try {
+    const result = await pool.query(
+      'UPDATE books SET title = $1, tag = $2, age_group = $3, pages = $4, access_level = $5, author = $6, active = $7, rating = $8, image = $9 WHERE id = $10 RETURNING *',
+      [title, tag, ageGroup, pages, accessLevel, author, active, rating, image, bookId]
+    );
+
+    if (result.rows.length > 0) {
+      res.json(result.rows[0]);
+    } else {
+      res.status(404).json({ error: 'Book not found' });
+    }
+  } catch (error) {
+    console.error('Error updating book by ID:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// Delete a book by ID
+app.delete('/api/books/:id', async (req, res) => {
+  const bookId = parseInt(req.params.id);
+
+  try {
+    const result = await pool.query('DELETE FROM books WHERE id = $1 RETURNING *', [bookId]);
+
+    if (result.rows.length > 0) {
+      res.json({ message: 'Book deleted successfully' });
+    } else {
+      res.status(404).json({ error: 'Book not found' });
+    }
+  } catch (error) {
+    console.error('Error deleting book by ID:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+
+// Get all users
+app.get('/api/users', async (req, res) => {
+    try {
+      const result = await pool.query('SELECT * FROM users');
+      res.json(result.rows);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+  });
+  
+  // Get a specific user by ID
+  app.get('/api/users/:id', async (req, res) => {
+    const userId = parseInt(req.params.id);
+  
+    try {
+      const result = await pool.query('SELECT * FROM users WHERE id = $1', [userId]);
+  
+      if (result.rows.length > 0) {
+        res.json(result.rows[0]);
+      } else {
+        res.status(404).json({ error: 'user not found' });
+      }
+    } catch (error) {
+      console.error('Error fetching user by ID:', error);
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+  });
+  
+  // Create a new user
+  app.post('/api/users', async (req, res) => {
+    const { username, email, password, profile_photo_url, birth_date, parental_code } = req.body;
+  
+    try {
+      const result = await pool.query(
+        'INSERT INTO users (username, email, password, profile_photo_url, birth_date, parental_code) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+        [username, email, password, profile_photo_url, birth_date, parental_code]
+      );
+  
+      res.status(201).json(result.rows[0]);
+    } catch (error) {
+      console.error('Error creating a new user:', error);
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+  });
+  
+  // Update a user by ID
+  app.put('/api/users/:id', async (req, res) => {
+    const userId = parseInt(req.params.id);
+    const { username, email, password, profile_photo_url, birth_date, parental_code } = req.body;
+  
+    try {
+      const result = await pool.query(
+        'UPDATE users SET username = $1, email = $2, password = $3, profile_photo_url = $4, birth_date = $5, parental_code = $6 WHERE id = $7 RETURNING *',
+        [username, email, password, profile_photo_url, birth_date, parental_code, userId]
+      );
+  
+      if (result.rows.length > 0) {
+        res.json(result.rows[0]);
+      } else {
+        res.status(404).json({ error: 'User not found' });
+      }
+    } catch (error) {
+      console.error('Error updating user by ID:', error);
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+  });
+  
+  // Delete a user by ID
+  app.delete('/api/users/:id', async (req, res) => {
+    const userId = parseInt(req.params.id);
+  
+    try {
+      const result = await pool.query('DELETE FROM users WHERE id = $1 RETURNING *', [userId]);
+  
+      if (result.rows.length > 0) {
+        res.json({ message: 'user deleted successfully' });
+      } else {
+        res.status(404).json({ error: 'user not found' });
+      }
+    } catch (error) {
+      console.error('Error deleting user by ID:', error);
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+  });
+
+
+
+  // Get all activities
+app.get('/api/activities', async (req, res) => {
+    try {
+      const result = await pool.query('SELECT * FROM activities');
+      res.json(result.rows);
+    } catch (error) {
+      console.error('Error fetching activities:', error);
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+  });
+  
+  // Get a specific activity by ID
+  app.get('/api/activities/:id', async (req, res) => {
+    const activityId = parseInt(req.params.id);
+  
+    try {
+      const result = await pool.query('SELECT * FROM activities WHERE id = $1', [activityId]);
+  
+      if (result.rows.length > 0) {
+        res.json(result.rows[0]);
+      } else {
+        res.status(404).json({ error: 'activity not found' });
+      }
+    } catch (error) {
+      console.error('Error fetching activity by ID:', error);
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+  });
+  
+// Create a new activity
+app.post('/api/activities', async (req, res) => {
+    const { book_id, title, description } = req.body;
+  
+    try {
+      const result = await pool.query(
+        'INSERT INTO activities (book_id, title, description) VALUES ($1, $2, $3) RETURNING *',
+        [book_id, title, description]
+      );
+  
+      res.status(201).json(result.rows[0]);
+    } catch (error) {
+      console.error('Error creating a new activity:', error);
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+  });
+  
+  // Update an activity by ID
+  app.put('/api/activities/:id', async (req, res) => {
+    const activityId = req.params.id;
+    const { title, description } = req.body;
+  
+    try {
+      const result = await pool.query(
+        'UPDATE activities SET title = $1, description = $2, updated_at = NOW() WHERE id = $3 RETURNING *',
+        [title, description, activityId]
+      );
+  
+      if (result.rows.length > 0) {
+        res.json(result.rows[0]);
+      } else {
+        res.status(404).json({ error: 'Activity not found' });
+      }
+    } catch (error) {
+      console.error('Error updating activity by ID:', error);
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+  });  
+  
+  // Delete a activity by ID
+  app.delete('/api/books/:id', async (req, res) => {
+    const activityId = parseInt(req.params.id);
+  
+    try {
+      const result = await pool.query('DELETE FROM activities WHERE id = $1 RETURNING *', [activityId]);
+  
+      if (result.rows.length > 0) {
+        res.json({ message: 'activity deleted successfully' });
+      } else {
+        res.status(404).json({ error: 'activity not found' });
+      }
+    } catch (error) {
+      console.error('Error deleting activity by ID:', error);
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+  });
+
+
+// importante!!!
+
+app.listen(port, () => {
+  console.log(`Server is running at http://localhost:${port}`);
+});
